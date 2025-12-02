@@ -5,7 +5,7 @@ DAY = 0
 
 
 def read_file(day: int):
-    file = pathlib.Path("data") / f"{day}.txt"
+    file = pathlib.Path("data") / f"{day:02}.txt"
     with open(file, "r") as handle:
         lines = handle.readlines()
     return(lines)
