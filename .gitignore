@@ -1,0 +1,3 @@
+# Don't share the input files or problem statements
+data/
+html/
