@@ -40,21 +40,32 @@ class Dial:
         self.pending_moves = pending_moves
         self.past_moves = list()
         self.rotations_visited = [starting_rotation]
+        self.times_pointed_at_zero = 0
     
     def run_analysis(self, *, debug=False):
         while self.pending_moves:
             move = self.pending_moves.popleft()
+            additional_times_pointed_at_zero = 0
             if debug:
                 print(f"From {self.current_rotation}, move {move}")
             if move.direction == "L":
                 rotation = -move.rotation
             else:
                 rotation = move.rotation
-            self.current_rotation = (self.current_rotation + rotation) % 100
+            next_rotation = self.current_rotation + rotation
+            if move.direction == "L" and self.current_rotation == 0:
+                additional_times_pointed_at_zero -= 1
+            if next_rotation == 0:
+                additional_times_pointed_at_zero += 1
+            self.current_rotation = next_rotation % 100
             if debug:
                 print(f"to {self.current_rotation}")
             self.past_moves.append(move)
             self.rotations_visited.append(self.current_rotation)
+            additional_times_pointed_at_zero = abs(next_rotation // 100)
+            if debug and additional_times_pointed_at_zero > 0:
+                print(f"Pointed at zero {additional_times_pointed_at_zero} additional times")
+            self.times_pointed_at_zero += additional_times_pointed_at_zero
         if debug:
             print(f"Visited rotations: {self.rotations_visited}")
     
@@ -62,7 +73,7 @@ class Dial:
         return self.rotations_visited.count(0)
 
     def get_answer2(self, *, debug=False):
-        return None
+        return self.times_pointed_at_zero
     
     def get_answers(self, *, debug=False):
         answer1 = self.get_answer1(debug=debug)
