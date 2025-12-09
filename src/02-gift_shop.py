@@ -24,6 +24,7 @@ class Range:
     def __init__(self, begin: str, end: str):
         self.begin = begin
         self.end = end
+        self.ids = set(i for i in range(int(begin), int(end) + 1))
     
     def __str__(self) -> str:
         return f"{self.begin}-{self.end}"
@@ -36,6 +37,7 @@ class Range:
             print(f"Warning: invalid range format: '{input_string}'")
             begin, end = "0", "0"
         return cls(str(begin), str(end))
+    
 
 
 class RangesListLike(list):
@@ -50,6 +52,7 @@ class RangesList(RangesListLike):
         super().__init__(iterable)
         self.atomic_ranges = RangesListLike()
         self.invalid_ids = set()
+        self.invalid_ids_2 = set()
     
     def find_atomic_ranges(self, *, debug=False):
         # 1. split ranges spanning odd/even lengths
@@ -72,8 +75,8 @@ class RangesList(RangesListLike):
                 tmp.append(range2)
             elif len(range.begin) % 2 == 1:
                 if debug:
-                    print(f"No invalid IDs in range {range}")
-                continue
+                    print(f"Atomic range found: {range}")
+                self.atomic_ranges.append(range)
             else:
                 half_length = len(range.begin) // 2
                 first_half_begin = int(range.begin[:half_length])
@@ -99,23 +102,37 @@ class RangesList(RangesListLike):
     def run_analysis(self, *, debug=False):
         self.find_atomic_ranges(debug=debug)
         if debug:
-            print(f"Atomic even ranges: {self.atomic_ranges}")
-        for range in self.atomic_ranges:
-            half_length = len(range.begin) // 2
-            first_half = int(range.begin[:half_length])
-            second_half_begin = int(range.begin[half_length:])
-            second_half_end = int(range.end[half_length:])
+            print(f"Atomic ranges: {self.atomic_ranges}")
+        for r in self.atomic_ranges:
+            if len(r.begin) % 2 == 1:
+                continue
+            half_length = len(r.begin) // 2
+            first_half = int(r.begin[:half_length])
+            second_half_begin = int(r.begin[half_length:])
+            second_half_end = int(r.end[half_length:])
             if second_half_begin <= first_half <= second_half_end:
                 invalid_id = 2 * str(first_half)
                 if debug:
                     print(f"Found invalid ID: {invalid_id}")
                 self.invalid_ids.add(invalid_id)
+        for r in self:
+            for id in r.ids:
+                len_id = len(str(id))
+                for l in range(1, 1 + len_id // 2):
+                    repeat = str(id)[0:l]
+                    n_repeats = len_id // l
+                    repeated_id = repeat * n_repeats
+                    if repeated_id == str(id):
+                        self.invalid_ids_2.add(repeated_id)
+                        if debug:
+                            print(f"Found invalid ID (2): {repeated_id}")
+                        break
     
     def get_answer1(self, *, debug=False):
         return sum([int(id) for id in self.invalid_ids])
 
     def get_answer2(self, *, debug=False):
-        return None
+        return sum([int(id) for id in self.invalid_ids_2])
     
     def get_answers(self, *, debug=False):
         answer1 = self.get_answer1(debug=debug)
