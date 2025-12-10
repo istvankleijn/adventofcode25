@@ -3,6 +3,10 @@ import pathlib
 
 DAY = 0
 
+test_input = """
+
+""".strip()
+
 
 def read_file(day: int):
     file = pathlib.Path("data") / f"{day:02}.txt"
@@ -11,7 +15,7 @@ def read_file(day: int):
     return(lines)
 
 def parse(lines, *, debug=False):
-    pass
+    return Object()
 
 class Object:
     def __init__(self):
@@ -31,9 +35,7 @@ class Object:
         answer2 = self.get_answer2(debug=debug)
         return answer1, answer2
 
-test_input = """
 
-""".strip()
 def test():
     lines = test_input.splitlines()
     object = parse(lines, debug=True)
