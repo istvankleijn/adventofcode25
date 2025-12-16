@@ -41,6 +41,7 @@ class FloorPlan:
             assert(len(row) == self.n)
             self.grid.append(row)
         self.grid.append(empty_row)
+        self.rolls_removed = list()
     
     def __str__(self):
         s = ""
@@ -61,8 +62,8 @@ class FloorPlan:
 
     def create_accessibility_plan(self, debug=False):
         self.accessibility_grid = [
-            ["." for _ in range(self.n - 2)]
-            for _ in range(self.m - 2)
+            ["." for _ in range(self.n)]
+            for _ in range(self.m)
         ]
         for i in range(1, self.m - 1):
             for j in range(1, self.n - 1):
@@ -71,9 +72,9 @@ class FloorPlan:
                     continue
                 adjacent_rolls = self.count_adjacent_rolls(i, j)
                 if adjacent_rolls < 4:
-                    self.accessibility_grid[i - 1][j - 1] = "x"
+                    self.accessibility_grid[i][j] = "x"
                 else:
-                    self.accessibility_grid[i - 1][j - 1] = "@"
+                    self.accessibility_grid[i][j] = "@"
 
         self.accessibility_plan = ""
         for row in self.accessibility_grid:
@@ -83,19 +84,36 @@ class FloorPlan:
             print(self.accessibility_plan)
         return self.accessibility_plan
     
-    def run_analysis(self, *, debug=False):
-        self.create_accessibility_plan(debug=debug)
+    def remove_accessible_rolls(self, *, debug=False):
+        for i, row in enumerate(self.accessibility_plan.splitlines()):
+            for j, c in enumerate(row.strip()):
+                if c == "x":
+                    self.grid[i][j] = "."
+        if debug:
+            print("Updated Floor Plan after removing accessible rolls:")
+            print(self)
     
-    def get_answer1(self, *, debug=False):
+    def run_analysis(self, *, debug=False):
+        self.first_plan = self.create_accessibility_plan(debug=debug)
+        self.rolls_removed.append(self.n_accessible_rolls(debug=debug))
+        while self.n_accessible_rolls(debug=debug):
+            self.remove_accessible_rolls(debug=debug)
+            self.create_accessibility_plan(debug=debug)
+            self.rolls_removed.append(self.n_accessible_rolls(debug=debug))
+    
+    def n_accessible_rolls(self, *, debug=False):
         n_accessible_rolls = 0
         for row in self.accessibility_grid:
             for c in row:
                 if c == "x":
                     n_accessible_rolls += 1
         return n_accessible_rolls
+    
+    def get_answer1(self, *, debug=False):
+        return self.rolls_removed[0]
 
     def get_answer2(self, *, debug=False):
-        return None
+        return sum(self.rolls_removed)
     
     def get_answers(self, *, debug=False):
         answer1 = self.get_answer1(debug=debug)
