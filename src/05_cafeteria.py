@@ -26,18 +26,25 @@ def read_file(day: int):
 
 def parse(lines, *, debug=False):
     fresh_ranges = list()
-    lines_reversed = lines[::-1]
-    while ( (line := lines_reversed.pop()) != "" ):
-        start, stop = line.strip().split("-")
+    ingredients = list()
+    for line in lines:
         if debug:
-            print(f"Parsing {line=} into range: {start}-{stop}")
-        fresh_ranges.append(range(int(start), int(stop) + 1))
-    else:
-        if debug:
-            print("Finished parsing fresh ranges. Ingredients follow.")
-        ingredients = [int(line.strip()) for line in lines_reversed]
-        print(f"Parsed ingredients: {ingredients}")
-    inventory = Inventory(fresh_ranges, ingredients[::-1])
+            print(f"Parsing {line=}")
+        line = line.strip()
+        try:
+            start, stop = line.split("-")
+            if debug:
+                print(f"  Found fresh range: {start=} {stop=}")
+            fresh_ranges.append(range(int(start), int(stop) + 1))
+        except ValueError:
+            if line == "":
+                continue
+            ingredient = int(line)
+            if debug:
+                print(f"  Found ingredient: {ingredient=}")
+            ingredients.append(ingredient)
+    
+    inventory = Inventory(fresh_ranges, ingredients)
     if debug:
         print("Parsed inventory:\n", inventory)
     return inventory
@@ -92,7 +99,7 @@ def test():
 if __name__ == "__main__":
     test()
     lines = read_file(DAY)
-    object = parse(lines, debug=True)
+    object = parse(lines)
     object.run_analysis()
     answer1, answer2 = object.get_answers()
     print(f"Answer 1: {answer1}\nAnswer 2: {answer2}")
