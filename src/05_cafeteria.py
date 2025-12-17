@@ -1,3 +1,4 @@
+import itertools
 import pathlib 
 
 
@@ -49,6 +50,18 @@ def parse(lines, *, debug=False):
         print("Parsed inventory:\n", inventory)
     return inventory
 
+
+def condense_ranges(range1, range2):
+    # Ensure range1 starts before range2
+    if range1.start > range2.start:
+        range1, range2 = range2, range1  
+    if range2.start <= range1.stop:
+        # Ranges overlap or are contiguous
+        range_out = range(range1.start, max(range1.stop, range2.stop))
+        return range_out
+    else:
+        # Ranges are separate and range1 starts before range2
+        return range1, range2
 class Inventory:
     def __init__(self, fresh_ranges, ingredients):
         self.fresh_ranges = fresh_ranges
@@ -73,15 +86,40 @@ class Inventory:
             else:
                 if debug:
                     print(f"Ingredient {ingredient} is spoiled.")
+    
+    def condense_all_ranges(self, *, debug=False):
+        condensed_ranges = self.fresh_ranges.copy()
+        run_loop = True
+        while run_loop:
+            # Only continue looping when at least one pair of ranges was condensed
+            run_loop = False
+            for range1, range2 in itertools.product(condensed_ranges, repeat=2):
+                if range1 is range2:
+                    if debug:
+                        print(f"Skip same range comparison {range1=}")
+                    continue
+                if debug:
+                    print(f"Considering {range1=}, {range2=}")
+                condensed = condense_ranges(range1, range2)
+                if isinstance(condensed, range):
+                    if debug:
+                        print(f"    Condensing into {condensed=}")
+                    condensed_ranges.remove(range1)
+                    condensed_ranges.remove(range2)
+                    condensed_ranges.append(condensed)
+                    run_loop = True
+                    break
+        self.condensed_ranges = list(condensed_ranges)
 
     def run_analysis(self, *, debug=False):
         self.determine_freshness(debug=debug)
+        self.condense_all_ranges(debug=debug)
     
     def get_answer1(self, *, debug=False):
         return len(self.fresh_ingredients)
 
     def get_answer2(self, *, debug=False):
-        return None
+        return sum(len(r) for r in self.condensed_ranges)
     
     def get_answers(self, *, debug=False):
         answer1 = self.get_answer1(debug=debug)
