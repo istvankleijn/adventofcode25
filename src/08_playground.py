@@ -1,4 +1,3 @@
-import itertools
 import math
 import pathlib 
 
@@ -58,6 +57,7 @@ class JunctionBox:
 class Rigging3D:
     def __init__(self, objects):
         self.objects = list(objects)
+        self.connections = list()
         self.circuits = {i: {i} for i in range(len(self.objects))}
     
     def __repr__(self):
@@ -88,37 +88,42 @@ class Rigging3D:
             self.distances.items(),
             key=lambda item: item[1]
         )
-        self.connections = list()
-        for (i, j), dist in sorted_distances[:n_connections]:
+        iteration = 0
+        while iteration < n_connections:
+            try:
+                (i, j), dist = sorted_distances[iteration]
+            except IndexError:
+                print(f"No more distances to process after {iteration} connections.")
+                break
             self.connections.append((i, j))
             self.objects[i].connect(j)
             self.objects[j].connect(i)
             new_circuit = self.circuits[i].union(self.circuits[j])
             for k in new_circuit:
                 self.circuits[k] = new_circuit
+            if len(new_circuit) == len(self.objects):
+                print("All objects are now connected in a single circuit.")
+                break
             if debug:
                 print(f"Connecting object {i} and {j} with distance {dist:.3f}")
                 print(f"  Circuit created: {new_circuit}")
+            iteration += 1
+        if iteration == n_connections:
+            print(f"Reached maximum number of connections: {n_connections}")
         if debug:
             print(f"Circuits: {self.circuits}")
-    
-    def find_circuits(self, *, debug=False):
-        for i, obj in enumerate(self.objects):
-            for _, circuit in self.circuits.items():
-                if i in circuit:
-                    if debug:
-                        print(f"Add object {i} and connections {obj.connections} to existing circuit {circuit}")
-                    circuit.add(i)
-                    circuit.update(obj.connections)
+            print(f"Last connection made: {(i, j)} (boxes: {self.objects[i]}, {self.objects[j]})")
+        self.last_connection_made = (i, j)
 
-    def run_analysis(self, *, n_connections=1000, debug=False):
+    def run_analysis(self, *, n_connections_initial=1000, n_connections_max=1_000_000, debug=False):
         if debug:
             print(f"Running analysis on {self!r}...")
         self.calculate_distances(debug=debug)
-        self.connect_objects(n_connections, debug=debug)
-        self.find_circuits(debug=debug)
+        self.connect_objects(n_connections_initial, debug=debug)
+        self.answer1 = self.calculate_answer1(debug=debug)
+        self.connect_objects(n_connections_max - n_connections_initial, debug=debug)
     
-    def get_answer1(self, *, n_largest=3, debug=False):
+    def calculate_answer1(self, *, n_largest=3, debug=False):
         unique_circuits = set(frozenset(circuit) for circuit in self.circuits.values())
         unique_circuits = sorted(
             unique_circuits,
@@ -129,8 +134,13 @@ class Rigging3D:
             print(f"Unique circuits: {unique_circuits}")
         return math.prod(len(circuit) for circuit in unique_circuits[:n_largest])
 
+    def get_answer1(self, *, debug=False):
+        return self.answer1
+    
     def get_answer2(self, *, debug=False):
-        return None
+        box1 = self.objects[self.last_connection_made[0]]
+        box2 = self.objects[self.last_connection_made[1]]
+        return int(box1.x) * int(box2.x)
     
     def get_answers(self, *, debug=False):
         answer1 = self.get_answer1(debug=debug)
@@ -141,7 +151,7 @@ class Rigging3D:
 def test():
     lines = test_input.splitlines()
     object = parse(lines, debug=True)
-    object.run_analysis(n_connections=3, debug=True)
+    object.run_analysis(n_connections_initial=10, n_connections_max=1000, debug=True)
     test1, test2 = object.get_answers(debug=True)
     print(f"Test 1: {test1}\nTest 2: {test2}")
 
